@@ -60,8 +60,37 @@ For detailed implementation guidance, see `AGENTS.md`.
    - Validate that today’s top apps appear and that hourly breakdowns change after using mobile data.
 
 ## Why a PR might show conflicts when you are the only developer
-Even with a single branch and a solo workflow, GitHub can mark a pull request as conflicted if the branch behind the PR is outdated versus the current `main` tip or if files were rebased/rewritten locally. Common causes and quick fixes:
-- The PR branch was created before recent commits landed on `main`; rebase or merge `main` into your branch before reopening the PR.
-- Force-push or history rewrites on `main` can invalidate the PR’s base; avoid rewriting `main` and prefer merge commits for clarity.
-- Uncommitted local changes merged manually into `main` but not pushed on the branch backing the PR; align histories by merging `main` into the branch and pushing again.
-- Repository/branch rename in flight (e.g., moving to `mobile-data-usage-monitor` with `main` as default) can briefly desync PR metadata; refresh the remote tracking branch and re-push.
+Even with a single branch and a solo workflow, GitHub can show a conflicted PR if the branch behind the PR is outdated versus the current `main` tip or if the history was rewritten locally. Typical causes:
+- The PR branch was created before recent commits landed on `main`.
+- Force-push or history rewrites on `main` invalidate the PR’s base.
+- Local changes were merged directly into `main` but never pushed to the PR branch.
+- Repository/branch rename in flight (e.g., moving to `mobile-data-usage-monitor` with `main` as default) temporarily desynced PR metadata.
+
+### How to resolve the conflict quickly (solo developer)
+1) Ensure `main` is up to date locally:
+   ```bash
+   git checkout main
+   git pull --ff-only origin main
+   ```
+2) Rebase your working branch on top of `main` (preferred) or merge `main` into it:
+   ```bash
+   git checkout work   # or your feature branch
+   git rebase main     # use git merge main if you prefer merge commits
+   ```
+3) Resolve any reported conflicts in your files, then continue the rebase:
+   ```bash
+   git status          # shows files needing resolution
+   # edit files to remove conflict markers
+   git add <files>
+   git rebase --continue
+   ```
+4) Push the updated branch back to GitHub:
+   ```bash
+   git push --force-with-lease origin work
+   ```
+5) Re-open or refresh the PR. If the repo/branch rename just completed, confirm the remote URL points to the renamed repo and the default branch is `main`:
+   ```bash
+   git remote set-url origin git@github.com:<org>/mobile-data-usage-monitor.git
+   git remote show origin | grep 'HEAD branch'
+   ```
+These steps align the PR with the current `main`, remove conflicts, and account for the repository rename/default-branch updates described above.
